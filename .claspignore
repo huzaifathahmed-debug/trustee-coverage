@@ -1,0 +1,11 @@
+README.md
+.gitignore
+.claspignore
+.clasp.json
+.clasprc.json
+.git/**
+node_modules/**
+*.zip
+.env
+client_secret.json
+credentials.json
