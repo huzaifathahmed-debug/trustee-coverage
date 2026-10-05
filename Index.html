@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trustee Coverage</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #e4e7ec;
+      --brand: #0f5132;
+      --brand2: #157347;
+      --nav: #0b1f18;
+      --danger: #b42318;
+      --warn: #b54708;
+      --good: #027a48;
+      --shadow: 0 10px 30px rgba(16,24,40,.06);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Inter, Arial, Helvetica, sans-serif; color: var(--ink); background: var(--bg); }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .app { min-height: 100vh; display: flex; }
+    .sidebar { width: 245px; background: var(--nav); color: white; position: fixed; inset: 0 auto 0 0; display: flex; flex-direction: column; z-index: 20; }
+    .brand { padding: 24px 20px 20px; border-bottom: 1px solid rgba(255,255,255,.1); }
+    .brand h1 { margin: 0; font-size: 20px; }
+    .brand p { margin: 7px 0 0; color: #aebcb6; font-size: 12px; line-height: 1.5; }
+    .nav { padding: 14px 10px; display: grid; gap: 5px; }
+    .nav button { border: 0; background: transparent; color: #d6e0dc; text-align: left; padding: 11px 13px; border-radius: 9px; }
+    .nav button:hover, .nav button.active { background: rgba(255,255,255,.1); color: white; }
+    .sidebar-footer { margin-top: auto; padding: 16px 20px; font-size: 11px; color: #92a39c; }
+    .main { margin-left: 245px; width: calc(100% - 245px); }
+    .topbar { min-height: 76px; background: white; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 24px; position: sticky; top: 0; z-index: 10; }
+    .page-title { font-size: 22px; font-weight: 750; }
+    .page-subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .content { padding: 24px; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .cards { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 14px; margin-bottom: 20px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 13px; padding: 17px; box-shadow: var(--shadow); }
+    .card-label { color: var(--muted); font-size: 12px; }
+    .card-value { font-size: 28px; font-weight: 780; margin-top: 7px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 13px; box-shadow: var(--shadow); overflow: hidden; margin-bottom: 18px; }
+    .panel-header { padding: 16px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .panel-title { font-weight: 700; }
+    .panel-body { padding: 18px; }
+    .section-header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; margin-bottom: 16px; }
+    .section-header h2 { margin: 0; font-size: 21px; }
+    .section-header p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .toolbar { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 14px; }
+    .search-input { min-width: 280px; flex: 1; }
+    .input, .search-input, select, textarea { width: 100%; border: 1px solid #d0d5dd; border-radius: 8px; padding: 10px 11px; background: white; color: var(--ink); }
+    textarea { min-height: 92px; resize: vertical; }
+    .btn { border: 1px solid transparent; border-radius: 8px; padding: 10px 13px; font-weight: 650; }
+    .btn-primary { background: var(--brand); color: white; }
+    .btn-primary:hover { background: var(--brand2); }
+    .btn-secondary { background: white; color: var(--ink); border-color: #d0d5dd; }
+    .btn-danger { background: #fff; color: var(--danger); border-color: #fda29b; }
+    .btn-small { padding: 7px 10px; font-size: 12px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .03em; background: #fafafa; }
+    th, td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    tr:last-child td { border-bottom: 0; }
+    .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 8px; font-size: 11px; font-weight: 700; background: #f2f4f7; color: #475467; white-space: nowrap; }
+    .badge.good { background: #ecfdf3; color: var(--good); }
+    .badge.warn { background: #fffaeb; color: var(--warn); }
+    .badge.danger { background: #fef3f2; color: var(--danger); }
+    .empty { color: var(--muted); text-align: center; padding: 24px 10px; }
+    .form-panel { background: white; border: 1px solid var(--line); border-radius: 13px; padding: 20px; box-shadow: var(--shadow); }
+    .form-section { padding: 0 0 20px; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
+    .form-section:last-child { border-bottom: 0; margin-bottom: 0; }
+    .form-section-title { font-weight: 750; margin-bottom: 13px; }
+    .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 650; margin-bottom: 6px; color: #344054; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+    .hint { color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .link { color: var(--brand); font-weight: 650; text-decoration: none; }
+    .split-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .toast { position: fixed; right: 22px; bottom: 22px; background: #101828; color: white; padding: 12px 16px; border-radius: 9px; display: none; z-index: 1000; max-width: 360px; box-shadow: var(--shadow); }
+    .toast.show { display: block; }
+    .loading { position: fixed; inset: 0; background: rgba(255,255,255,.68); display: none; align-items: center; justify-content: center; z-index: 999; }
+    .loading.show { display: flex; }
+    .loading-box { background: #101828; color: white; padding: 14px 18px; border-radius: 10px; font-size: 13px; }
+    @media (max-width: 1200px) { .cards { grid-template-columns: repeat(3, 1fr); } .form-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 820px) {
+      .sidebar { position: relative; width: 100%; min-height: auto; }
+      .app { display: block; }
+      .main { margin-left: 0; width: 100%; }
+      .nav { display: flex; overflow-x: auto; }
+      .nav button { white-space: nowrap; }
+      .sidebar-footer { display: none; }
+      .topbar { position: relative; padding: 13px 15px; }
+      .content { padding: 15px; }
+      .cards { grid-template-columns: repeat(2,1fr); }
+      .grid-2, .form-grid { grid-template-columns: 1fr; }
+      .form-group.full { grid-column: auto; }
+    }
+    @media (max-width: 480px) { .cards { grid-template-columns: 1fr; } .search-input { min-width: 100%; } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>Trustee Coverage</h1>
+      <p>Personal Amãna Takaful sales CRM</p>
+    </div>
+    <nav class="nav">
+      <button id="nav-dashboard" class="active" onclick="showView('dashboard')">Dashboard</button>
+      <button id="nav-customers" onclick="showView('customers')">Customers</button>
+      <button id="nav-followups" onclick="showView('followups')">Follow-ups</button>
+      <button id="nav-renewals" onclick="showView('renewals')">Renewals</button>
+      <button id="nav-motor" onclick="showView('motor')">Motor Policies</button>
+      <button id="nav-underwriting" onclick="showView('underwriting')">Underwriting</button>
+    </nav>
+    <div class="sidebar-footer">Built on Google Sheets + Apps Script</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="page-title" id="page-title">Dashboard</div>
+        <div class="page-subtitle" id="page-subtitle">Your insurance sales work at a glance</div>
+      </div>
+      <button class="btn btn-primary" onclick="openAddLead()">+ Add Lead</button>
+    </div>
+
+    <div class="content">
+      <section id="view-dashboard" class="view active">
+        <div class="cards">
+          <div class="card"><div class="card-label">Customers</div><div class="card-value" id="kpi-total">0</div></div>
+          <div class="card"><div class="card-label">Interested / Negotiating</div><div class="card-value" id="kpi-interested">0</div></div>
+          <div class="card"><div class="card-label">Quotes Active</div><div class="card-value" id="kpi-quotes">0</div></div>
+          <div class="card"><div class="card-label">Policies Issued</div><div class="card-value" id="kpi-issued">0</div></div>
+          <div class="card"><div class="card-label">Overdue Follow-ups</div><div class="card-value" id="kpi-overdue">0</div></div>
+          <div class="card"><div class="card-label">Due Today</div><div class="card-value" id="kpi-today">0</div></div>
+          <div class="card"><div class="card-label">Renewals ≤ 30 Days</div><div class="card-value" id="kpi-renewals">0</div></div>
+          <div class="card"><div class="card-label">UW Pending</div><div class="card-value" id="kpi-uw">0</div></div>
+          <div class="card"><div class="card-label">Motor Renewals ≤ 30</div><div class="card-value" id="kpi-motor">0</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="panel"><div class="panel-header"><div class="panel-title">Needs attention</div><button class="btn btn-secondary btn-small" onclick="showView('followups')">View all</button></div><div class="panel-body" id="dashboard-followups"></div></div>
+          <div class="panel"><div class="panel-header"><div class="panel-title">Upcoming renewals</div><button class="btn btn-secondary btn-small" onclick="showView('renewals')">View all</button></div><div class="panel-body" id="dashboard-renewals"></div></div>
+        </div>
+      </section>
+
+      <section id="view-customers" class="view">
+        <div class="section-header"><div><h2>Customers & Prospects</h2><p>Search, update and move opportunities forward.</p></div></div>
+        <div class="toolbar">
+          <input id="customer-search" class="search-input" placeholder="Search company, contact, registration, phone, product..." onkeydown="if(event.key==='Enter') searchCustomers()">
+          <button class="btn btn-primary" onclick="searchCustomers()">Search</button>
+          <button class="btn btn-secondary" onclick="loadCustomers()">Refresh</button>
+        </div>
+        <div class="panel"><div class="panel-body" id="customer-results"></div></div>
+      </section>
+
+      <section id="view-detail" class="view">
+        <div class="section-header">
+          <div><h2 id="detail-title">Customer Details</h2><p>Update the sales record and next action.</p></div>
+          <button class="btn btn-secondary" onclick="showView('customers')">← Customers</button>
+        </div>
+        <div class="form-panel">
+          <form id="customer-form" onsubmit="event.preventDefault(); saveCustomerForm();">
+            <input type="hidden" id="record-row"><input type="hidden" id="f-customer-id">
+            <div class="form-section">
+              <div class="form-section-title">Customer</div>
+              <div class="form-grid">
+                <div class="form-group"><label>Company Name *</label><input class="input" id="f-company" required></div>
+                <div class="form-group"><label>Business Name</label><input class="input" id="f-business"></div>
+                <div class="form-group"><label>Registration No.</label><input class="input" id="f-reg"></div>
+                <div class="form-group"><label>Contact Person</label><input class="input" id="f-contact-person"></div>
+                <div class="form-group"><label>Contact Number</label><input class="input" id="f-contact-number"></div>
+                <div class="form-group"><label>Current Insurer</label><select id="f-insurer"></select></div>
+                <div class="form-group"><label>Amãna Policy Check</label><select id="f-amana-check"></select></div>
+              </div>
+            </div>
+            <div class="form-section">
+              <div class="form-section-title">Pipeline</div>
+              <div class="form-grid">
+                <div class="form-group"><label>Lead Status</label><select id="f-lead"></select></div>
+                <div class="form-group"><label>Product</label><select id="f-product"></select></div>
+                <div class="form-group"><label>Priority</label><select id="f-priority"></select></div>
+                <div class="form-group"><label>Last Contact</label><input class="input" type="date" id="f-last-contact"></div>
+                <div class="form-group"><label>Next Follow-up</label><input class="input" type="date" id="f-next-follow"></div>
+                <div class="form-group"><label>Action Required</label><select id="f-action"></select></div>
+                <div class="form-group"><label>Quotation Status</label><select id="f-quote"></select></div>
+                <div class="form-group"><label>Quotation Date</label><input class="input" type="date" id="f-quote-date"></div>
+                <div class="form-group"><label>Documents Status</label><select id="f-docs"></select></div>
+              </div>
+            </div>
+            <div class="form-section">
+              <div class="form-section-title">Policy & Underwriting</div>
+              <div class="form-grid">
+                <div class="form-group"><label>Policy Status</label><select id="f-policy-status"></select></div>
+                <div class="form-group"><label>Policy Start</label><input class="input" type="date" id="f-policy-start"></div>
+                <div class="form-group"><label>Policy Expiry</label><input class="input" type="date" id="f-policy-expiry"></div>
+                <div class="form-group"><label>UW Status</label><select id="f-uw-status"></select></div>
+                <div class="form-group full"><label>UW Remarks</label><textarea id="f-uw-remarks"></textarea></div>
+                <div class="form-group full"><label>Sales Notes</label><textarea id="f-notes"></textarea></div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" id="btn-send-uw" onclick="sendCurrentToUw()">Send to Underwriting</button>
+              <button type="button" class="btn btn-secondary" id="btn-add-motor" onclick="openMotorForCurrent()">Add Motor Policy</button>
+              <button type="submit" class="btn btn-primary">Save Customer</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section id="view-followups" class="view">
+        <div class="section-header"><div><h2>Follow-ups</h2><p>Prioritize overdue and due customer actions.</p></div></div>
+        <div class="toolbar">
+          <button class="btn btn-secondary" onclick="loadFollowUps('due')">Due / Overdue</button>
+          <button class="btn btn-secondary" onclick="loadFollowUps('today')">Today</button>
+          <button class="btn btn-secondary" onclick="loadFollowUps('upcoming')">Next 14 Days</button>
+        </div>
+        <div class="panel"><div class="panel-body" id="followup-results"></div></div>
+      </section>
+
+      <section id="view-renewals" class="view">
+        <div class="section-header"><div><h2>Renewals</h2><p>Policies expired or expiring within 60 days.</p></div></div>
+        <div class="panel"><div class="panel-body" id="renewal-results"></div></div>
+      </section>
+
+      <section id="view-motor" class="view">
+        <div class="section-header"><div><h2>Motor Policies</h2><p>Track multiple vehicles and motor policies per customer.</p></div><button class="btn btn-primary" onclick="newMotorForm()">+ Add Motor</button></div>
+        <div class="panel"><div class="panel-body" id="motor-results"></div></div>
+        <div class="form-panel" id="motor-form-panel" style="display:none">
+          <div class="form-section-title" id="motor-form-title">Add Motor Policy</div>
+          <input type="hidden" id="m-row"><input type="hidden" id="m-customer-id">
+          <div class="form-grid">
+            <div class="form-group full"><label>Customer *</label><select id="m-customer-select" onchange="document.getElementById('m-customer-id').value=this.value"></select></div>
+            <div class="form-group"><label>Vehicle Registration</label><input class="input" id="m-registration"></div>
+            <div class="form-group"><label>Vehicle Type</label><select id="m-type"></select></div>
+            <div class="form-group"><label>Make / Model</label><input class="input" id="m-model"></div>
+            <div class="form-group"><label>Year</label><input class="input" id="m-year"></div>
+            <div class="form-group"><label>Engine / Tonnage</label><input class="input" id="m-engine"></div>
+            <div class="form-group"><label>Coverage Type</label><select id="m-coverage"></select></div>
+            <div class="form-group"><label>Current Insurer</label><select id="m-insurer"></select></div>
+            <div class="form-group"><label>Policy No.</label><input class="input" id="m-policy-no"></div>
+            <div class="form-group"><label>Policy Start</label><input class="input" type="date" id="m-start"></div>
+            <div class="form-group"><label>Policy Expiry</label><input class="input" type="date" id="m-expiry"></div>
+            <div class="form-group"><label>Premium (MVR)</label><input class="input" type="number" step="0.01" id="m-premium"></div>
+            <div class="form-group"><label>Policy Status</label><select id="m-status"></select></div>
+            <div class="form-group"><label>Quotation Status</label><select id="m-quote"></select></div>
+            <div class="form-group"><label>UW Status</label><select id="m-uw"></select></div>
+            <div class="form-group"><label>Documents Status</label><select id="m-docs"></select></div>
+            <div class="form-group"><label>Next Action</label><select id="m-action"></select></div>
+            <div class="form-group"><label>Next Follow-up</label><input class="input" type="date" id="m-follow"></div>
+            <div class="form-group full"><label>Remarks</label><textarea id="m-remarks"></textarea></div>
+          </div>
+          <div class="form-actions" style="margin-top:14px"><button class="btn btn-secondary" onclick="closeMotorForm()">Cancel</button><button class="btn btn-primary" onclick="saveMotorForm()">Save Motor Policy</button></div>
+        </div>
+      </section>
+
+      <section id="view-underwriting" class="view">
+        <div class="section-header"><div><h2>Underwriting</h2><p>Send cases to a separate UW workbook and pull responses back into the CRM.</p></div></div>
+        <div class="panel">
+          <div class="panel-body">
+            <div class="split-actions">
+              <button class="btn btn-primary" onclick="createUwWorkspace()">Create / Open UW Workspace</button>
+              <button class="btn btn-secondary" onclick="syncUw()">Sync UW → CRM</button>
+              <a id="uw-workspace-link" class="btn btn-secondary" href="#" target="_blank" style="display:none;text-decoration:none">Open UW Sheet</a>
+            </div>
+            <p class="hint">Share only the separate underwriting workbook with UW staff. Their status, Amãna policy check, response, reviewer and next action can then be synced back here.</p>
+          </div>
+        </div>
+        <div class="panel"><div class="panel-body" id="uw-results"></div></div>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="loading" id="loading"><div class="loading-box" id="loading-text">Loading…</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+  let OPTIONS = {};
+  let MOTOR_OPTIONS = {};
+  let CUSTOMER_CACHE = [];
+  const titles = {
+    dashboard: ['Dashboard','Your insurance sales work at a glance'],
+    customers: ['Customers','Prospects, customers and pipeline management'],
+    detail: ['Customer Details','Update customer information and next actions'],
+    followups: ['Follow-ups','Overdue, today and upcoming customer actions'],
+    renewals: ['Renewals','Policies approaching expiry'],
+    motor: ['Motor Policies','Track multiple vehicles per customer'],
+    underwriting: ['Underwriting','Collaborate with UW through a separate synced workbook']
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    showLoading('Starting Trustee Coverage…');
+    google.script.run.withSuccessHandler(function(opts) {
+      OPTIONS = opts || {};
+      populateCustomerDropdowns();
+      google.script.run.withSuccessHandler(function(mopts) {
+        MOTOR_OPTIONS = mopts || {};
+        populateMotorDropdowns();
+        hideLoading();
+        showView('dashboard');
+      }).withFailureHandler(showError).getMotorOptions();
+    }).withFailureHandler(showError).getOptions();
+  });
+
+  function showView(view) {
+    document.querySelectorAll('.view').forEach(function(el){ el.classList.remove('active'); });
+    document.querySelectorAll('.nav button').forEach(function(el){ el.classList.remove('active'); });
+    const target = document.getElementById('view-' + view);
+    if (target) target.classList.add('active');
+    const nav = document.getElementById('nav-' + view);
+    if (nav) nav.classList.add('active');
+    const t = titles[view] || titles.dashboard;
+    document.getElementById('page-title').textContent = t[0];
+    document.getElementById('page-subtitle').textContent = t[1];
+    if (view === 'dashboard') loadDashboard();
+    if (view === 'customers') loadCustomers();
+    if (view === 'followups') loadFollowUps('due');
+    if (view === 'renewals') loadRenewals();
+    if (view === 'motor') loadMotorPolicies();
+    if (view === 'underwriting') loadUnderwriting();
+  }
+
+  function loadDashboard() {
+    showLoading('Loading dashboard…');
+    google.script.run.withSuccessHandler(function(d) {
+      hideLoading();
+      setText('kpi-total', d.total); setText('kpi-interested', d.interested); setText('kpi-quotes', d.quotations);
+      setText('kpi-issued', d.policiesIssued); setText('kpi-overdue', d.overdue); setText('kpi-today', d.dueToday);
+      setText('kpi-renewals', d.renewals30); setText('kpi-uw', d.uwPending); setText('kpi-motor', d.motorRenewals30);
+      renderMiniFollowups(d.followUps || []); renderMiniRenewals(d.renewals || []);
+    }).withFailureHandler(showError).getDashboardData();
+  }
+
+  function renderMiniFollowups(records) {
+    const el = document.getElementById('dashboard-followups');
+    if (!records.length) return el.innerHTML = empty('No due follow-ups.');
+    el.innerHTML = table(['Company','Follow-up','Action',''], records.map(function(r){ return [esc(r['Company Name']), esc(dateDisplay(r['Next Follow-up'])), badge(r['Follow-up Status']), openCustomerButton(r._row)]; }));
+  }
+  function renderMiniRenewals(records) {
+    const el = document.getElementById('dashboard-renewals');
+    if (!records.length) return el.innerHTML = empty('No renewals within 60 days.');
+    el.innerHTML = table(['Company','Expiry','Status',''], records.map(function(r){ return [esc(r['Company Name']), esc(dateDisplay(r['Policy Expiry Date'])), badge(r['Renewal Status']), openCustomerButton(r._row)]; }));
+  }
+
+  function loadCustomers() {
+    document.getElementById('customer-search').value = '';
+    searchCustomers();
+  }
+  function searchCustomers() {
+    const q = document.getElementById('customer-search').value || '';
+    showLoading('Loading customers…');
+    google.script.run.withSuccessHandler(function(records){ hideLoading(); CUSTOMER_CACHE = records || []; renderCustomers(CUSTOMER_CACHE); refreshMotorCustomerSelect(CUSTOMER_CACHE); }).withFailureHandler(showError).searchCustomers(q);
+  }
+  function renderCustomers(records) {
+    const el = document.getElementById('customer-results');
+    if (!records.length) return el.innerHTML = empty('No customers found.');
+    el.innerHTML = table(['Company','Contact','Product','Lead Status','Next Action','Follow-up',''], records.map(function(r){
+      return [esc(r['Company Name']), esc(r['Contact Person'] || r['Contact Number']), esc(r['Products']), badge(r['Lead Status']), esc(r['Action Required']), esc(dateDisplay(r['Next Follow-up'])), openCustomerButton(r._row)];
+    }));
+  }
+
+  function openAddLead() {
+    resetCustomerForm();
+    document.getElementById('detail-title').textContent = 'Add Lead';
+    showView('detail');
+  }
+  function openCustomer(row) {
+    showLoading('Loading customer…');
+    google.script.run.withSuccessHandler(function(r){ hideLoading(); populateCustomerForm(r); showView('detail'); }).withFailureHandler(showError).getCustomer(Number(row));
+  }
+  function resetCustomerForm() {
+    document.getElementById('customer-form').reset();
+    document.getElementById('record-row').value = '';
+    document.getElementById('f-customer-id').value = '';
+    populateCustomerDropdowns();
+    setSelect('f-lead','New'); setSelect('f-priority','Medium'); setSelect('f-insurer','Unknown');
+    setSelect('f-amana-check','Unknown'); setSelect('f-quote','Not Started'); setSelect('f-policy-status','No Policy');
+    setSelect('f-uw-status','Not Required'); setSelect('f-docs','Not Requested');
+  }
+  function populateCustomerForm(r) {
+    resetCustomerForm();
+    document.getElementById('detail-title').textContent = r['Company Name'] || 'Customer Details';
+    document.getElementById('record-row').value = r._row || '';
+    document.getElementById('f-customer-id').value = r['Customer ID'] || '';
+    val('f-company',r['Company Name']); val('f-business',r['Business Name']); val('f-reg',r['Registration No.']);
+    val('f-contact-person',r['Contact Person']); val('f-contact-number',r['Contact Number']);
+    setSelect('f-insurer',r['Current Insurer']); setSelect('f-amana-check',r['Amana Policy Check']); setSelect('f-lead',r['Lead Status']);
+    setSelect('f-product',r['Products']); setSelect('f-priority',r['Priority']); val('f-last-contact',r['Last Contact']); val('f-next-follow',r['Next Follow-up']);
+    setSelect('f-action',r['Action Required']); setSelect('f-quote',r['Quotation Status']); val('f-quote-date',r['Quotation Date']); setSelect('f-docs',r['Documents Status']);
+    setSelect('f-policy-status',r['Policy Status']); val('f-policy-start',r['Policy Start Date']); val('f-policy-expiry',r['Policy Expiry Date']);
+    setSelect('f-uw-status',r['UW Status']); val('f-uw-remarks',r['UW Remarks']); val('f-notes',r['Remarks / Notes']);
+  }
+  function collectCustomerForm() {
+    return {
+      _row: document.getElementById('record-row').value,
+      'Customer ID': document.getElementById('f-customer-id').value,
+      'Company Name': gv('f-company'), 'Business Name': gv('f-business'), 'Registration No.': gv('f-reg'),
+      'Contact Person': gv('f-contact-person'), 'Contact Number': gv('f-contact-number'), 'Current Insurer': gv('f-insurer'),
+      'Amana Policy Check': gv('f-amana-check'), 'Lead Status': gv('f-lead'), 'Products': gv('f-product'), 'Priority': gv('f-priority'),
+      'Last Contact': gv('f-last-contact'), 'Next Follow-up': gv('f-next-follow'), 'Action Required': gv('f-action'),
+      'Quotation Status': gv('f-quote'), 'Quotation Date': gv('f-quote-date'), 'Documents Status': gv('f-docs'),
+      'Policy Status': gv('f-policy-status'), 'Policy Start Date': gv('f-policy-start'), 'Policy Expiry Date': gv('f-policy-expiry'),
+      'UW Status': gv('f-uw-status'), 'UW Remarks': gv('f-uw-remarks'), 'Remarks / Notes': gv('f-notes')
+    };
+  }
+  function saveCustomerForm() {
+    const data = collectCustomerForm();
+    if (!data['Company Name'].trim()) return toast('Company name is required.');
+    showLoading('Saving customer…');
+    const runner = google.script.run.withSuccessHandler(function(r){ hideLoading(); populateCustomerForm(r); toast('Customer saved.'); }).withFailureHandler(showError);
+    if (data._row) runner.saveCustomer(data); else runner.addLead(data);
+  }
+
+  function loadFollowUps(mode) {
+    showLoading('Loading follow-ups…');
+    google.script.run.withSuccessHandler(function(records){ hideLoading(); renderFollowUps(records || []); }).withFailureHandler(showError).getFollowUps(mode);
+  }
+  function renderFollowUps(records) {
+    const el = document.getElementById('followup-results');
+    if (!records.length) return el.innerHTML = empty('No follow-ups in this view.');
+    el.innerHTML = table(['Company','Date','Status','Priority','Action','Contact',''], records.map(function(r){
+      return [esc(r['Company Name']), esc(dateDisplay(r['Next Follow-up'])), badge(r['Follow-up Status']), badge(r['Priority']), esc(r['Action Required']), esc(r['Contact Number']), openCustomerButton(r._row)];
+    }));
+  }
+  function loadRenewals() {
+    showLoading('Loading renewals…');
+    google.script.run.withSuccessHandler(function(records){ hideLoading(); renderRenewals(records || []); }).withFailureHandler(showError).getRenewals();
+  }
+  function renderRenewals(records) {
+    const el = document.getElementById('renewal-results');
+    if (!records.length) return el.innerHTML = empty('No renewal records found.');
+    el.innerHTML = table(['Company','Product','Policy Status','Expiry','Renewal','Action',''], records.map(function(r){
+      return [esc(r['Company Name']), esc(r['Products']), badge(r['Policy Status']), esc(dateDisplay(r['Policy Expiry Date'])), badge(r['Renewal Status']), esc(r['Action Required']), openCustomerButton(r._row)];
+    }));
+  }
+
+  function loadMotorPolicies() {
+    showLoading('Loading motor policies…');
+    google.script.run.withSuccessHandler(function(records){ hideLoading(); renderMotorPolicies(records || []); ensureCustomerListForMotor(); }).withFailureHandler(showError).getMotorPolicies('');
+  }
+  function renderMotorPolicies(records) {
+    const el = document.getElementById('motor-results');
+    if (!records.length) return el.innerHTML = empty('No motor policies yet.');
+    el.innerHTML = table(['Company','Vehicle','Type','Coverage','Policy Status','Expiry','Next Action',''], records.map(function(r){
+      return [esc(r['Company Name']), esc(r['Vehicle Registration'] || r['Make / Model']), esc(r['Vehicle Type']), esc(r['Coverage Type']), badge(r['Policy Status']), esc(dateDisplay(r['Policy Expiry Date'])), esc(r['Next Action']), '<button class="btn btn-secondary btn-small" onclick="editMotor(' + Number(r._row) + ')">Open</button>'];
+    }));
+  }
+  function newMotorForm(customerId) {
+    document.getElementById('motor-form-panel').style.display = 'block';
+    document.getElementById('motor-form-title').textContent = 'Add Motor Policy';
+    ['m-row','m-registration','m-model','m-year','m-engine','m-policy-no','m-start','m-expiry','m-premium','m-follow','m-remarks'].forEach(function(id){ val(id,''); });
+    setSelect('m-type','Motorcycle'); setSelect('m-coverage','Third Party'); setSelect('m-insurer','Unknown'); setSelect('m-status','No Policy'); setSelect('m-quote','Not Started'); setSelect('m-uw','Not Required'); setSelect('m-docs','Not Requested'); setSelect('m-action','Call Customer');
+    if (customerId) { setSelect('m-customer-select',customerId); val('m-customer-id',customerId); }
+    document.getElementById('motor-form-panel').scrollIntoView({behavior:'smooth'});
+  }
+  function openMotorForCurrent() {
+    const id = gv('f-customer-id');
+    if (!id) return toast('Save the customer first, then add the motor policy.');
+    showView('motor'); newMotorForm(id);
+  }
+  function editMotor(row) {
+    showLoading('Loading motor record…');
+    google.script.run.withSuccessHandler(function(r){ hideLoading(); newMotorForm(r['Customer ID']); val('m-row',r._row); document.getElementById('motor-form-title').textContent = 'Edit Motor Policy';
+      val('m-registration',r['Vehicle Registration']); setSelect('m-type',r['Vehicle Type']); val('m-model',r['Make / Model']); val('m-year',r['Year']); val('m-engine',r['Engine / Tonnage']); setSelect('m-coverage',r['Coverage Type']); setSelect('m-insurer',r['Current Insurer']); val('m-policy-no',r['Policy No.']); val('m-start',r['Policy Start Date']); val('m-expiry',r['Policy Expiry Date']); val('m-premium',r['Premium (MVR)']); setSelect('m-status',r['Policy Status']); setSelect('m-quote',r['Quotation Status']); setSelect('m-uw',r['UW Status']); setSelect('m-docs',r['Documents Status']); setSelect('m-action',r['Next Action']); val('m-follow',r['Next Follow-up']); val('m-remarks',r['Remarks']);
+    }).withFailureHandler(showError).getMotorPolicy(Number(row));
+  }
+  function saveMotorForm() {
+    const data = {_row:gv('m-row'),'Customer ID':gv('m-customer-select'),'Vehicle Registration':gv('m-registration'),'Vehicle Type':gv('m-type'),'Make / Model':gv('m-model'),'Year':gv('m-year'),'Engine / Tonnage':gv('m-engine'),'Coverage Type':gv('m-coverage'),'Current Insurer':gv('m-insurer'),'Policy No.':gv('m-policy-no'),'Policy Start Date':gv('m-start'),'Policy Expiry Date':gv('m-expiry'),'Premium (MVR)':gv('m-premium'),'Policy Status':gv('m-status'),'Quotation Status':gv('m-quote'),'UW Status':gv('m-uw'),'Documents Status':gv('m-docs'),'Next Action':gv('m-action'),'Next Follow-up':gv('m-follow'),'Remarks':gv('m-remarks')};
+    if (!data['Customer ID']) return toast('Choose a customer.');
+    showLoading('Saving motor policy…');
+    google.script.run.withSuccessHandler(function(){ hideLoading(); closeMotorForm(); loadMotorPolicies(); toast('Motor policy saved.'); }).withFailureHandler(showError).saveMotorPolicy(data);
+  }
+  function closeMotorForm(){ document.getElementById('motor-form-panel').style.display='none'; }
+
+  function loadUnderwriting() {
+    showLoading('Loading underwriting…');
+    google.script.run.withSuccessHandler(function(payload){ hideLoading(); renderUnderwriting(payload); }).withFailureHandler(showError).getUnderwritingItems();
+  }
+  function renderUnderwriting(payload) {
+    const info = payload.workspace || {}; const items = payload.items || []; const link = document.getElementById('uw-workspace-link');
+    if (info.configured && info.url) { link.href = info.url; link.style.display = 'inline-block'; } else { link.style.display = 'none'; }
+    const el = document.getElementById('uw-results');
+    if (!info.configured) return el.innerHTML = empty('Underwriting workspace not created yet.');
+    if (!items.length) return el.innerHTML = empty('No cases have been sent to underwriting.');
+    el.innerHTML = table(['Company','Product','Submitted','UW Status','Amãna Check','Reviewer','Next Action'], items.map(function(r){ return [esc(r['Company Name']),esc(r['Product']),esc(dateTimeDisplay(r['Submitted Date'])),badge(r['UW Status']),esc(r['Amana Policy Check']),esc(r['UW Reviewer']),esc(r['Next Action'])]; }));
+  }
+  function createUwWorkspace() {
+    showLoading('Preparing UW workspace…');
+    google.script.run.withSuccessHandler(function(info){ hideLoading(); toast('UW workspace ready.'); loadUnderwriting(); if (info.url) window.open(info.url,'_blank'); }).withFailureHandler(showError).setupUnderwritingWorkspace();
+  }
+  function syncUw() {
+    showLoading('Syncing underwriting…');
+    google.script.run.withSuccessHandler(function(result){ hideLoading(); toast('Synced ' + result.updated + ' customer record(s).'); renderUnderwriting(result.payload); }).withFailureHandler(showError).syncUnderwritingToCrm();
+  }
+  function sendCurrentToUw() {
+    const row = Number(gv('record-row'));
+    if (!row) return toast('Save this customer before sending to underwriting.');
+    const product = gv('f-product');
+    const requestText = window.prompt('What do you need underwriting to review or confirm?', 'Please review and provide terms / confirm existing Amãna policy status.');
+    if (requestText === null) return;
+    const due = window.prompt('Optional due date (YYYY-MM-DD):', '');
+    showLoading('Sending to underwriting…');
+    google.script.run.withSuccessHandler(function(){ hideLoading(); toast('Sent to underwriting workspace.'); loadUnderwriting(); }).withFailureHandler(showError).pushCustomerToUnderwriting(row, product, requestText, due || '', gv('f-notes'));
+  }
+
+  function populateCustomerDropdowns() {
+    fillSelect('f-insurer', OPTIONS.insurers); fillSelect('f-amana-check', OPTIONS.amanaPolicyCheck); fillSelect('f-lead', OPTIONS.leadStatus);
+    fillSelect('f-product', OPTIONS.products); fillSelect('f-priority', OPTIONS.priority); fillSelect('f-action', OPTIONS.actions);
+    fillSelect('f-quote', OPTIONS.quotationStatus); fillSelect('f-docs', OPTIONS.documentsStatus); fillSelect('f-policy-status', OPTIONS.policyStatus); fillSelect('f-uw-status', OPTIONS.uwStatus);
+  }
+  function populateMotorDropdowns() {
+    fillSelect('m-type', MOTOR_OPTIONS.vehicleType); fillSelect('m-coverage', MOTOR_OPTIONS.coverageType); fillSelect('m-insurer', MOTOR_OPTIONS.insurers);
+    fillSelect('m-status', MOTOR_OPTIONS.policyStatus); fillSelect('m-quote', MOTOR_OPTIONS.quotationStatus); fillSelect('m-uw', MOTOR_OPTIONS.uwStatus); fillSelect('m-docs', MOTOR_OPTIONS.documentsStatus); fillSelect('m-action', MOTOR_OPTIONS.actions);
+  }
+  function ensureCustomerListForMotor() {
+    if (CUSTOMER_CACHE.length) return refreshMotorCustomerSelect(CUSTOMER_CACHE);
+    google.script.run.withSuccessHandler(function(records){ CUSTOMER_CACHE = records || []; refreshMotorCustomerSelect(CUSTOMER_CACHE); }).withFailureHandler(showError).searchCustomers('');
+  }
+  function refreshMotorCustomerSelect(records) {
+    const select = document.getElementById('m-customer-select'); if (!select) return;
+    const current = select.value;
+    select.innerHTML = '<option value="">Select customer…</option>' + records.map(function(r){ return '<option value="' + attr(r['Customer ID']) + '">' + esc(r['Company Name']) + (r['Registration No.'] ? ' — ' + esc(r['Registration No.']) : '') + '</option>'; }).join('');
+    if (current) select.value = current;
+  }
+
+  function fillSelect(id, values) {
+    const el = document.getElementById(id); if (!el) return;
+    const current = el.value;
+    el.innerHTML = '<option value=""></option>' + (values || []).map(function(v){ return '<option value="' + attr(v) + '">' + esc(v) + '</option>'; }).join('');
+    if (current) el.value = current;
+  }
+  function setSelect(id, value) { const el=document.getElementById(id); if(!el) return; if(value && !Array.from(el.options).some(function(o){return o.value===String(value);})){ const o=document.createElement('option');o.value=value;o.textContent=value;el.appendChild(o);} el.value=value||''; }
+  function gv(id){ const el=document.getElementById(id); return el ? el.value : ''; }
+  function val(id,v){ const el=document.getElementById(id); if(el) el.value = v || ''; }
+  function setText(id,v){ const el=document.getElementById(id); if(el) el.textContent = (v===undefined||v===null)?'':v; }
+  function openCustomerButton(row){ return '<button class="btn btn-secondary btn-small" onclick="openCustomer(' + Number(row) + ')">Open</button>'; }
+  function table(headers, rows){ return '<div class="table-wrap"><table><thead><tr>' + headers.map(function(h){return '<th>'+esc(h)+'</th>';}).join('') + '</tr></thead><tbody>' + rows.map(function(row){return '<tr>'+row.map(function(cell){return '<td>'+cell+'</td>';}).join('')+'</tr>';}).join('') + '</tbody></table></div>'; }
+  function empty(msg){ return '<div class="empty">'+esc(msg)+'</div>'; }
+  function badge(value){ const v=String(value||''); const l=v.toLowerCase(); let c=''; if(/issued|completed|received|accepted/.test(l)) c=' good'; else if(/overdue|expired|declined|lost|rejected/.test(l)) c=' danger'; else if(/today|pending|due|questions|review/.test(l)) c=' warn'; return '<span class="badge'+c+'">'+esc(v||'—')+'</span>'; }
+  function dateDisplay(v){ if(!v) return ''; const s=String(v).slice(0,10); const p=s.split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : s; }
+  function dateTimeDisplay(v){ if(!v) return ''; return String(v).replace('T',' ').slice(0,16); }
+  function esc(v){ return String(v===undefined||v===null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];}); }
+  function attr(v){ return esc(v).replace(/`/g,'&#096;'); }
+  function showLoading(text){ document.getElementById('loading-text').textContent=text||'Loading…'; document.getElementById('loading').classList.add('show'); }
+  function hideLoading(){ document.getElementById('loading').classList.remove('show'); }
+  function toast(message){ const el=document.getElementById('toast'); el.textContent=message; el.classList.add('show'); setTimeout(function(){el.classList.remove('show');},3200); }
+  function showError(err){ hideLoading(); const msg = err && err.message ? err.message : String(err||'Unknown error'); toast(msg); console.error(err); }
+</script>
+</body>
+</html>

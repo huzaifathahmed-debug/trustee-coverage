@@ -1,0 +1,6 @@
+{
+  "timeZone": "Indian/Maldives",
+  "dependencies": {},
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8"
+}
