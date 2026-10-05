@@ -1,0 +1,7 @@
+.clasp.json
+.clasprc.json
+node_modules/
+*.zip
+.env
+client_secret.json
+credentials.json
